@@ -2,10 +2,13 @@
 
 # Giess den Kiez Pumpen aggregation from OSM
 
-This is a Docker based GitHub Action to aggregate pumps data from open street maps and to store them in a geojson-file.
+This is a Docker based GitHub Action to aggregate pumps data from OpenStreetMap and to store them in a geojson file.
 
-The aggregated data is used to provide locations and information about the Berlin street pumps in the frontend of [Gieß den Kiez](https://github.com/technologiestiftung/giessdenkiez-de).
-The [Overpass API](http://overpass-api.de) for OSM is used to retrieve the data, by fetching all nodes with tag "man*made"="water_well" and "description"="Berliner Straßenbrunnen". The corresponding query is defined and can be modified in the script \_fetch.py*.
+The aggregated data is used to provide locations and information about the street pumps in the frontend of [Gieß den Kiez](https://github.com/technologiestiftung/giessdenkiez-de).
+The [Overpass API](http://overpass-api.de) for OSM is used to retrieve the data, by fetching all nodes with tag `"man_made"="water_well"` and `"description"="Berliner Straßenbrunnen"`.
+
+The corresponding query is defined in the script [fetch.py](/fetch.py). It can be overriden by providing a custom overpass query statement.
+
 The data obtained in this way is further processed and the raw OSM data is filtered. In _utils.py_, all attributes are dropped that are theoretically still available in the OSM data, but which we do not need. By adding the respective attributes to the filter list, they can be included in the final data set.
 
 ## Inputs
@@ -13,6 +16,10 @@ The data obtained in this way is further processed and the raw OSM data is filte
 ### `outfile-path`
 
 **Required** The path where the GeoJSON file should be written to. Default `"public/data/pumps.geojson"`.
+
+### `query`
+
+A custom overpass query statement to retrieve pumps from OpenStreetMap. When omitted, the action will retrieve Berlin pumps.
 
 ## Outputs
 
@@ -47,6 +54,8 @@ jobs:
         id: pumps
         with:
           outfile-path: "out/pumps.geojson"
+          # Pass "query" argument to specify custom overpass query string (see example below for the city of Magdeburg)
+          # query: '[out:json][bbox:52.0124,11.4100, 52.2497,11.8330];(node["man_made"="water_well"];);out;>;out;'
       # Use the output from the `pumps` step
       - name: File output
         run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
@@ -77,6 +86,8 @@ jobs:
         id: pumps
         with:
           outfile-path: "out/pumps.geojson"
+          # Pass "query" argument to specify custom overpass query string (see example below for the city of Magdeburg)
+          # query: '[out:json][bbox:52.0124,11.4100, 52.2497,11.8330];(node["man_made"="water_well"];);out;>;out;'
       # Use the output from the `hello` step
       - name: File output
         run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
@@ -109,6 +120,7 @@ jobs:
         id: pumps
         with:
           outfile-path: "out/pumps.geojson"
+          query: '[out:json][bbox:52.0124,11.4100, 52.2497,11.8330];(node["man_made"="water_well"];);out;>;out;'
       # Use the output from the `pumps` step
       - name: File output
         run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
@@ -158,11 +170,14 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable -->
 <table>
-  <tr>
-    <td align="center"><a href="https://fabianmoronzirfas.me/"><img src="https://avatars.githubusercontent.com/u/315106?v=4?s=64" width="64px;" alt=""/><br /><sub><b>Fabian Morón Zirfas</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=ff6347" title="Code">💻</a> <a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=ff6347" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/Lisa-Stubert"><img src="https://avatars.githubusercontent.com/u/61182572?v=4?s=64" width="64px;" alt=""/><br /><sub><b>Lisa-Stubert</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=Lisa-Stubert" title="Code">💻</a> <a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=Lisa-Stubert" title="Documentation">📖</a></td>
-    <td align="center"><a href="https://github.com/vogelino"><img src="https://avatars.githubusercontent.com/u/2759340?v=4?s=64" width="64px;" alt=""/><br /><sub><b>Lucas Vogel</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=vogelino" title="Documentation">📖</a></td>
-  </tr>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://fabianmoronzirfas.me/"><img src="https://avatars.githubusercontent.com/u/315106?v=4?s=64" width="64px;" alt="Fabian Morón Zirfas"/><br /><sub><b>Fabian Morón Zirfas</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=ff6347" title="Code">💻</a> <a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=ff6347" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Lisa-Stubert"><img src="https://avatars.githubusercontent.com/u/61182572?v=4?s=64" width="64px;" alt="Lisa-Stubert"/><br /><sub><b>Lisa-Stubert</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=Lisa-Stubert" title="Code">💻</a> <a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=Lisa-Stubert" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/vogelino"><img src="https://avatars.githubusercontent.com/u/2759340?v=4?s=64" width="64px;" alt="Lucas Vogel"/><br /><sub><b>Lucas Vogel</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=vogelino" title="Documentation">📖</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/JensWinter"><img src="https://avatars.githubusercontent.com/u/6548550?v=4?s=64" width="64px;" alt="Jens Winter-Hübenthal"/><br /><sub><b>Jens Winter-Hübenthal</b></sub></a><br /><a href="https://github.com/technologiestiftung/giessdenkiez-de-osm-pumpen-harvester/commits?author=JensWinter" title="Code">💻</a></td>
+    </tr>
+  </tbody>
 </table>
 
 <!-- markdownlint-restore -->
