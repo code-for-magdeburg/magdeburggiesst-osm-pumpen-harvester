@@ -2,7 +2,7 @@
 
 # Giess den Kiez Pumpen aggregation from OSM
 
-This is a Docker based GitHub Action to aggregate pumps data from OpenStreetMap and to store them in a geojson file.
+This is a Docker based GitHub Action to aggregate pumps data from OpenStreetMap and to store them in a geojson file. It is defined in [./action.yml](./action.yml)
 
 The aggregated data is used to provide locations and information about the street pumps in the frontend of [Gieß den Kiez](https://github.com/technologiestiftung/giessdenkiez-de).
 The [Overpass API](http://overpass-api.de) for OSM is used to retrieve the data, by fetching all nodes with tag `"man_made"="water_well"` and `"description"="Berliner Straßenbrunnen"`.
@@ -11,7 +11,7 @@ The corresponding query is defined in the script [fetch.py](/fetch.py). It can b
 
 The data obtained in this way is further processed and the raw OSM data is filtered. In _utils.py_, all attributes are dropped that are theoretically still available in the OSM data, but which we do not need. By adding the respective attributes to the filter list, they can be included in the final data set.
 
-## Inputs
+## Inputs to the Github Action
 
 ### `outfile-path`
 
@@ -21,17 +21,24 @@ The data obtained in this way is further processed and the raw OSM data is filte
 
 A custom overpass query statement to retrieve pumps from OpenStreetMap. When omitted, the action will retrieve Berlin pumps.
 
-## Outputs
+## Outputs from the Github Action
 
 ### `file`
 
 The path to where the file was written.
 
 ## Example Usage
+The Github Action defined in this repository is built to be reusable. What you do with the generated `pumps.geojson` file is up to you and depends on your specific use case.
 
-### Public repo
+### Usage for giessdenkiez-de repository
+For [giessdenkiez-de](https://github.com/technologiestiftung/giessdenkiez-de), the custom Github Action defined here in [./action.yml](./action.yml) gets used in a periodically triggered Github Action, 
+which is defined in [giessdenkiez-de -> pumps.yml](https://github.com/technologiestiftung/giessdenkiez-de/blob/master/.github/workflows/pumps.yml).
+For this specific use case, the generated `pumps.geojson` file is subsequently uploaded to a [Supabase](https://supabase.com/) storage location. For details, refer to the Github Actions definition in [giessdenkiez-de -> pumps.yml](https://github.com/technologiestiftung/giessdenkiez-de/blob/master/.github/workflows/pumps.yml). 
 
-File: `.github/workflows/main.yml`
+### Your own public repository
+Reference the Github Action defined in this repository in your own Github Actions file. Use the generated `pumps.geojson` in a way that fits your architecture.
+
+File: `.github/workflows/pumps.yml`
 
 ```yml
 on:
@@ -61,7 +68,8 @@ jobs:
         run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
 ```
 
-### Your own Private Repo
+### Your own private repository
+You can use the code from this public repository in your own private repository in your own Github Actions file. Use the generated `pumps.geojson` in a way that fits your architecture.
 
 File: `.github/workflows/main.yml`
 
@@ -91,67 +99,6 @@ jobs:
       # Use the output from the `hello` step
       - name: File output
         run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
-```
-
-**Achtung!:** For our case these files get pushed to a Supabase storage bucket. Therefore we need to use another script action.
-
-See a full example workflow below.
-
-```yml
-name: Full Pumps CI
-on:
-  workflow_dispatch:
-  schedule:
-    # every sunday morning at 4:00
-    - cron: "0 4 * * 0"
-
-jobs:
-  hello_world_job:
-    runs-on: ubuntu-latest
-    name: A job to aggregate pumps data from open street maps
-    steps:
-      - name: Pumps data generate step
-        uses: technologiestiftung/giessdenkiez-de-osm-pumpen-harvester@master
-        id: pumps
-        with:
-          outfile-path: "out/pumps.geojson"
-          query: '[out:json][bbox:52.0124,11.4100, 52.2497,11.8330];(node["man_made"="water_well"];);out;>;out;'
-      # Use the output from the `pumps` step
-      - name: File output
-        run: echo "The file was written to ${{ steps.pumps.outputs.file }}"
-        # https://github.com/marketplace/actions/add-commit?version=v4.4.0
-      - name: Upload file to supabase
-        run: |
-          getStatusCode=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X GET \
-            ${{ vars.SUPABASE_URL_TEST }}/storage/v1/object/info/public/${{ vars.SUPABASE_DATA_ASSETS_BUCKET_TEST }}/pumps.geojson)
-          if [ "$getStatusCode" = "200" ]; then
-            putStatusCode=$(curl -s -o /dev/null -w "%{http_code}" \
-              -X PUT \
-              -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN_TEST }}" \
-              -H "Content-Type: application/geo+json" \
-              -d "@${{ steps.pumps.outputs.file }}" \
-              ${{ vars.SUPABASE_URL_TEST }}/storage/v1/object/${{ vars.SUPABASE_DATA_ASSETS_BUCKET_TEST }}/pumps.geojson)
-            if [ "$putStatusCode" = "200" ]; then
-              echo "Uploading to Supabase successful"
-            else
-              echo "Uploading to Supabase failed"
-              exit 1
-            fi
-          else
-            postStatusCode=$(curl -s -o /dev/null -w "%{http_code}" \
-              -X POST \
-              -H "Authorization: Bearer ${{ secrets.SUPABASE_ACCESS_TOKEN_TEST }}" \
-              -H "Content-Type: application/geo+json" \
-              -d "@${{ steps.pumps.outputs.file }}" \
-              ${{ vars.SUPABASE_URL_TEST }}/storage/v1/object/${{ vars.SUPABASE_DATA_ASSETS_BUCKET_TEST }}/pumps.geojson)
-            if [ "$postStatusCode" = "200" ]; then
-              echo "Uploading to Supabase successful"
-            else
-              echo "Uploading to Supabase failed"
-              exit 1
-            fi
-          fi         
 ```
 
 ## Development
